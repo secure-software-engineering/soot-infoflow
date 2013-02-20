@@ -3,6 +3,8 @@ package soot.jimple.infoflow.source;
 import java.util.List;
 
 import soot.SootMethod;
+import soot.Unit;
+import soot.jimple.Stmt;
 
 public class DefaultSourceSinkManager implements SourceSinkManager {
 
@@ -31,5 +33,17 @@ public class DefaultSourceSinkManager implements SourceSinkManager {
 	public boolean isSinkMethod(SootMethod sMethod) {
 		return sinks.contains(sMethod.toString());
 	}
+
+    @Override
+    public boolean isSourceMethod(Unit unit) {
+        return unit instanceof Stmt && ((Stmt)unit).containsInvokeExpr() && 
+                isSourceMethod(((Stmt)unit).getInvokeExpr().getMethod());
+    }
+
+    @Override
+    public boolean isSinkMethod(Unit unit) {
+        return unit instanceof Stmt && ((Stmt)unit).containsInvokeExpr() && 
+                isSinkMethod(((Stmt)unit).getInvokeExpr().getMethod());
+    }
 
 }
