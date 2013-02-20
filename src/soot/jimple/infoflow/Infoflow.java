@@ -310,14 +310,10 @@ public class Infoflow implements IInfoflow {
 						// Look for a source in the method
 						PatchingChain<Unit> units = m.getActiveBody().getUnits();
 						for (Unit u : units) {
-							Stmt s = (Stmt) u;
-							if (s.containsInvokeExpr()) {
-								InvokeExpr ie = s.getInvokeExpr();
-								if (sourcesSinks.isSourceMethod(ie.getMethod())) {
-									problem.initialSeeds.add(u);
-									System.out.println("Source found: " + u);
-								}
-							}
+						    if (sourcesSinks.isSourceMethod(u)){
+						        problem.initialSeeds.add(u);
+                                System.out.println("Source found: " + u);
+						    }
 						}
 					}
 				}

@@ -669,7 +669,7 @@ public class InfoflowProblem extends AbstractInfoflowProblem {
 							if (iStmt instanceof JAssignStmt) {
 								final JAssignStmt stmt = (JAssignStmt) iStmt;
 
-								if (sourceSinkManager.isSourceMethod(stmt.getInvokeExpr().getMethod())) {
+								if (sourceSinkManager.isSourceMethod(stmt)) {
 									if (DEBUG)
 										System.out.println("Found source: " + stmt.getInvokeExpr().getMethod());
 									if (pathTracking == PathTrackingMethod.ForwardTracking)
@@ -685,7 +685,7 @@ public class InfoflowProblem extends AbstractInfoflowProblem {
 							}
 
 							// if we have called a sink we have to store the path from the source - in case one of the params is tainted!
-							if (sourceSinkManager.isSinkMethod(iStmt.getInvokeExpr().getMethod())) {
+							if (sourceSinkManager.isSinkMethod(iStmt)) {
 								boolean taintedParam = false;
 								for (int i = 0; i < callArgs.size(); i++) {
 									if (callArgs.get(i).equals(source.getAccessPath().getPlainValue())) {
