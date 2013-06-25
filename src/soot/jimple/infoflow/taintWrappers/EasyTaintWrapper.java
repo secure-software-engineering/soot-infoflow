@@ -63,6 +63,10 @@ public class EasyTaintWrapper implements ITaintPropagationWrapper {
 		this.includeList = new HashSet<String>();
 	}
 
+    public EasyTaintWrapper(String f) throws IOException{
+        this(new File(f));
+    }
+
 	public EasyTaintWrapper(File f) throws IOException{
 		BufferedReader reader = null;
 		try{

@@ -2,6 +2,10 @@ package soot.jimple.infoflow;
 
 import java.util.List;
 
+import soot.SootMethod;
+import soot.Transform;
+import soot.Transformer;
+import soot.Unit;
 import soot.jimple.infoflow.AbstractInfoflowProblem.PathTrackingMethod;
 import soot.jimple.infoflow.entryPointCreators.IEntryPointCreator;
 import soot.jimple.infoflow.source.ISourceSinkManager;
@@ -36,6 +40,19 @@ public interface IInfoflow {
 	 */
 	public void setStopAfterFirstFlow(boolean stopAfterFirstFlow);
 
+
+    /**
+     * Sets the interprocedural CFG to be used by the InfoFlowProblem
+     * @param factory the interprocedural control flow factory
+     */
+    public void setIcfgFactory(BiDirICFGFactory factory);
+
+    /**
+     * List of preprocessors that need to be executed in order before
+     * the information flow.
+     * @param preprocessors the pre-processors
+     */
+    public void setPreProcessors(List<Transform> preprocessors);
 
 	/**
 	 * Computes the information flow on a list of entry point methods. This list

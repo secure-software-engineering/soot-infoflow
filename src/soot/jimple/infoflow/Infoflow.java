@@ -63,6 +63,9 @@ public class Infoflow implements IInfoflow {
 	private boolean stopAfterFirstFlow = false;
 	private boolean inspectSinks = true;
 
+    private BiDirICFGFactory icfgFactory = new DefaultBiDiICFGFactory();
+    private List<Transform> preProcessors = Collections.emptyList();
+
 	/**
 	 * Creates a new instance of the InfoFlow class for analyzing plain Java code without any references to APKs or the Android SDK.
 	 */
@@ -109,6 +112,16 @@ public class Infoflow implements IInfoflow {
 	public void setStopAfterFirstFlow(boolean stopAfterFirstFlow) {
 		this.stopAfterFirstFlow = stopAfterFirstFlow;
 	}
+
+    @Override
+    public void setIcfgFactory(BiDirICFGFactory factory){
+        this.icfgFactory = factory;
+    }
+
+    @Override
+    public void setPreProcessors(List<Transform> preprocessors){
+        this.preProcessors = preprocessors;
+    }
 	
 	@Override
 	public void computeInfoflow(String path, IEntryPointCreator entryPointCreator,
@@ -287,7 +300,7 @@ public class Infoflow implements IInfoflow {
 				System.out.println("Constant propagation done.");
 				
 				System.out.println("Callgraph has " + Scene.v().getCallGraph().size() + " edges");
-				InfoflowProblem forwardProblem  = new InfoflowProblem(sourcesSinks);
+				InfoflowProblem forwardProblem  = new InfoflowProblem(icfgFactory.buildBiDirICFG(), sourcesSinks);
 				forwardProblem.setTaintWrapper(taintWrapper);
 				forwardProblem.setPathTracking(pathTracking);
 				forwardProblem.setStopAfterFirstFlow(stopAfterFirstFlow);
@@ -422,6 +435,9 @@ public class Infoflow implements IInfoflow {
 			
 		});
 
+        for (Transform tr : preProcessors){
+            PackManager.v().getPack("wjtp").add(tr);
+        }
 		PackManager.v().getPack("wjtp").add(transform);
 	}
 		
