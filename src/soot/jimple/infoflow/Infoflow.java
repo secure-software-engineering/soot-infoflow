@@ -43,6 +43,7 @@ import soot.jimple.infoflow.taintWrappers.ITaintPropagationWrapper;
 import soot.jimple.infoflow.util.SootMethodRepresentationParser;
 import soot.jimple.toolkits.callgraph.ReachableMethods;
 import soot.jimple.toolkits.ide.JimpleIFDSSolver;
+import soot.jimple.toolkits.ide.icfg.BiDiInterproceduralCFG;
 import soot.jimple.toolkits.scalar.ConstantPropagatorAndFolder;
 import soot.options.Options;
 /**
@@ -65,6 +66,7 @@ public class Infoflow implements IInfoflow {
 
     private BiDirICFGFactory icfgFactory = new DefaultBiDiICFGFactory();
     private List<Transform> preProcessors = Collections.emptyList();
+    private BiDiInterproceduralCFG<Unit,SootMethod> iCfg;
 
 	/**
 	 * Creates a new instance of the InfoFlow class for analyzing plain Java code without any references to APKs or the Android SDK.
@@ -300,7 +302,8 @@ public class Infoflow implements IInfoflow {
 				System.out.println("Constant propagation done.");
 				
 				System.out.println("Callgraph has " + Scene.v().getCallGraph().size() + " edges");
-				InfoflowProblem forwardProblem  = new InfoflowProblem(icfgFactory.buildBiDirICFG(), sourcesSinks);
+                iCfg = icfgFactory.buildBiDirICFG();
+				InfoflowProblem forwardProblem  = new InfoflowProblem(iCfg, sourcesSinks);
 				forwardProblem.setTaintWrapper(taintWrapper);
 				forwardProblem.setPathTracking(pathTracking);
 				forwardProblem.setStopAfterFirstFlow(stopAfterFirstFlow);
@@ -419,9 +422,9 @@ public class Infoflow implements IInfoflow {
 					System.out.println("No results found.");
 
 				for (Entry<SinkInfo, Set<SourceInfo>> entry : results.getResults().entrySet()) {
-					System.out.println("The sink " + entry.getKey() + " was called with values from the following sources:");
+					System.out.println("The sink " + entry.getKey() + " in method " + iCfg.getMethodOf(entry.getKey().getContext()).getSignature() +" was called with values from the following sources:");
 					for (SourceInfo source : entry.getValue()) {
-						System.out.println("- " + source.getSource());
+						System.out.println("- " + source + " in method " + iCfg.getMethodOf(source.getContext()).getSignature());
 						if (source.getPath() != null && !source.getPath().isEmpty()) {
 							System.out.println("\ton Path: ");
 							for (Unit p : source.getPath()) {
@@ -440,7 +443,7 @@ public class Infoflow implements IInfoflow {
         }
 		PackManager.v().getPack("wjtp").add(transform);
 	}
-		
+
 		private void stringToTextFile(String fileName, String contents) throws IOException {
 			BufferedWriter wr = null;
 			try {

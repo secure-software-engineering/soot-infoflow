@@ -11,6 +11,8 @@ import soot.Unit;
 import soot.Value;
 import soot.jimple.InvokeExpr;
 import soot.jimple.Stmt;
+import soot.tagkit.LineNumberTag;
+import soot.tagkit.Tag;
 
 /**
  * Class for collecting information flow results
@@ -55,7 +57,17 @@ public class InfoflowResults {
 		public List<Unit> getPath() {
 			return this.path;
 		}
-		
+
+        @Override
+        public String toString(){
+            StringBuilder sb = new StringBuilder(context.toString());
+
+            if (context.hasTag("LineNumberTag"))
+                sb.append(" on line ").append(((LineNumberTag)context.getTag("LineNumberTag")).getLineNumber());
+
+            return sb.toString();
+        }
+
 		@Override
 		public int hashCode() {
 			return 31 * this.source.hashCode()
@@ -99,7 +111,12 @@ public class InfoflowResults {
 		
 		@Override
 		public String toString() {
-			return this.context.toString();
+            StringBuilder sb = new StringBuilder(context.toString());
+
+            if (context.hasTag("LineNumberTag"))
+                sb.append(" on line ").append(((LineNumberTag)context.getTag("LineNumberTag")).getLineNumber());
+
+			return sb.toString();
 		}
 
 		@Override
