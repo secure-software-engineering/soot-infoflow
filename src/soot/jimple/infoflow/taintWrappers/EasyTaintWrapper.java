@@ -1,5 +1,6 @@
 package soot.jimple.infoflow.taintWrappers;
-import java.io.BufferedReader;
+
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -11,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import soot.Scene;
 import soot.SootClass;
 import soot.SootMethod;
@@ -34,6 +37,7 @@ import soot.jimple.internal.JAssignStmt;
  *
  */
 public class EasyTaintWrapper implements ITaintPropagationWrapper {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final Map<String, List<String>> classList;
 	private final Map<String, List<String>> excludeList;
 	private final Map<String, List<String>> killList;
@@ -92,8 +96,7 @@ public class EasyTaintWrapper implements ITaintPropagationWrapper {
 			this.classList = SootMethodRepresentationParser.v().parseClassNames(methodList, true);
 			this.excludeList = SootMethodRepresentationParser.v().parseClassNames(excludeList, true);
 			this.killList = SootMethodRepresentationParser.v().parseClassNames(killList, true);
-			System.out.println("Loaded wrapper entries for " + classList.size() + " classes " +
-					"and " + excludeList.size() + " exclusions.");
+			logger.info("Loaded wrapper entries for {} classes and {} exclusions.", classList.size(), excludeList.size());
 		}
 		finally {
 			if (reader != null)

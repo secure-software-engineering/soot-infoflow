@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import soot.IntType;
 import soot.Local;
 import soot.Scene;
@@ -23,6 +25,8 @@ import soot.jimple.internal.JIfStmt;
 import soot.jimple.internal.JNopStmt;
 
 public class DefaultEntryPointCreator extends BaseEntryPointCreator {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	/**
 	 * Soot requires a main method, so we create a dummy method which calls all entry functions.
@@ -52,7 +56,7 @@ public class DefaultEntryPointCreator extends BaseEntryPointCreator {
 			
 			Local localVal = generateClassConstructor(createdClass, body);
 			if (localVal == null) {
-				System.out.println("Cannot generate constructor for class: "+ createdClass);
+				logger.warn("Cannot generate constructor for class: {}", createdClass);
 				continue;
 			}
 			localVarsForClasses.put(className, localVal);
@@ -72,7 +76,7 @@ public class DefaultEntryPointCreator extends BaseEntryPointCreator {
 				SootMethod currentMethod = findMethod(Scene.v().getSootClass(methodAndClass.getClassName()),
 						methodAndClass.getSubSignature());
 				if (currentMethod == null) {
-					System.err.println("Entry point not found: " + method);
+					logger.warn("Entry point not found: {}", method);
 					continue;
 				}
 				

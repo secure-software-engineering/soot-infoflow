@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import soot.ArrayType;
 import soot.BooleanType;
 import soot.ByteType;
@@ -45,6 +47,8 @@ import soot.jimple.StringConstant;
  * createDummyMainInternal method to provide their entry point implementation.
  */
 public abstract class BaseEntryPointCreator implements IEntryPointCreator {
+
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
 	protected Map<String, Local> localVarsForClasses = new HashMap<String, Local>();
 	private final Set<SootClass> failedClasses = new HashSet<SootClass>();
@@ -187,18 +191,18 @@ public abstract class BaseEntryPointCreator implements IEntryPointCreator {
 		}
 		else if (tp instanceof ArrayType) {
 			Value arrVal = buildArrayOfType(body, gen, (ArrayType) tp, constructionStack, parentClasses);
-			if (arrVal == null) {
-				System.err.println("Warning: Array parameter pf type " + tp + " substituted by null");
+			if (arrVal == null){
+				logger.warn("Array parameter substituted by null");
 				return NullConstant.v();
 			}
 			return arrVal;
 		}
 		else {
-			System.err.println("Unsupported parameter type: " + tp.toString());
+			logger.warn("Unsupported parameter type: {}", tp.toString());
 			return null;
 		}
 		throw new RuntimeException("Should never see me");
-	}
+    }
 	
 	/**
 	 * Constructs an array of the given type with a single element of this type
@@ -285,7 +289,7 @@ public abstract class BaseEntryPointCreator implements IEntryPointCreator {
 		// We cannot create instances of phantom classes as we do not have any
 		// constructor information for them
 		if (createdClass.isPhantom() || createdClass.isPhantomClass()) {
-			System.out.println("Cannot generate constructor for phantom class " + createdClass.getName());
+			logger.warn("Cannot generate constructor for phantom class {}", createdClass.getName());
 			return null;
 		}
 
@@ -306,7 +310,7 @@ public abstract class BaseEntryPointCreator implements IEntryPointCreator {
 		
 		// Make sure that we don't run into loops
 		if (!constructionStack.add(createdClass)) {
-			System.out.println("Ran into a constructor generation loop, substituting with null...");
+			logger.warn("Ran into a constructor generation loop, substituting with null...");
 			Local tempLocal = generator.generateLocal(RefType.v(createdClass));			
 			AssignStmt assignStmt = Jimple.v().newAssignStmt(tempLocal, NullConstant.v());
 			body.getUnits().add(assignStmt);
@@ -331,16 +335,14 @@ public abstract class BaseEntryPointCreator implements IEntryPointCreator {
 							continue;
 						return cons;
 					}
-				System.err.println("Warning, cannot create valid constructor for " + createdClass +
-						", because it is " + (createdClass.isInterface() ? "an interface" :
-							(createdClass.isAbstract() ? "abstract" : ""))+ " and cannot substitute with subclass");
+				logger.warn("Cannot create valid constructor for {}, because it is {} and cannot substitute with subclass", createdClass,
+                        (createdClass.isInterface() ? "an interface" :(createdClass.isAbstract() ? "abstract" : "")));
 				this.failedClasses.add(createdClass);
 				return null;
 			}
 			else{
-				System.err.println("Warning, cannot create valid constructor for " + createdClass +
-					", because it is " + (createdClass.isInterface() ? "an interface" :
-						(createdClass.isAbstract() ? "abstract" : "")));
+                logger.warn("Cannot create valid constructor for {}, because it is {} and cannot substitute with subclass", createdClass,
+                        (createdClass.isInterface() ? "an interface" :(createdClass.isAbstract() ? "abstract" : "")));
 				this.failedClasses.add(createdClass);
 				return null;
 			}
@@ -392,8 +394,7 @@ public abstract class BaseEntryPointCreator implements IEntryPointCreator {
 				return tempLocal;
 			}
 
-			System.err.println("Could not find a suitable constructor for class "
-					+ createdClass.getName());
+			logger.warn("Could not find a suitable constructor for class {}", createdClass.getName());
 			this.failedClasses.add(createdClass);
 			return null;
 		}

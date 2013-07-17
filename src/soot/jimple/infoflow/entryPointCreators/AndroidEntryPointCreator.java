@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import soot.IntType;
 import soot.Local;
 import soot.Scene;
@@ -41,6 +43,9 @@ import soot.jimple.internal.JNopStmt;
  * 
  */
 public class AndroidEntryPointCreator extends BaseEntryPointCreator implements IEntryPointCreator{
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
 	private static final boolean DEBUG = true;
 	
 	private JimpleBody body;
@@ -154,7 +159,7 @@ public class AndroidEntryPointCreator extends BaseEntryPointCreator implements I
 					// Create an instance of the content provider
 					Local localVal = generateClassConstructor(currentClass, body);
 					if (localVal == null) {
-						System.err.println("Constructor cannot be generated for " + currentClass.getName());
+						logger.warn("Constructor cannot be generated for {}", currentClass.getName());
 						continue;
 					}
 					localVarsForClasses.put(currentClass.getName(), localVal);
@@ -186,8 +191,7 @@ public class AndroidEntryPointCreator extends BaseEntryPointCreator implements I
 					// Create the application
 					applicationLocal = generateClassConstructor(applicationClass, body);
 					if (applicationLocal == null) {
-						System.err.println("Constructor cannot be generated for application class "
-								+ applicationClass.getName());
+						logger.warn("Constructor cannot be generated for application class {}", applicationClass.getName());
 						continue;
 					}
 					localVarsForClasses.put(applicationClass.getName(), applicationLocal);
@@ -261,13 +265,13 @@ public class AndroidEntryPointCreator extends BaseEntryPointCreator implements I
 						else {
 							SootMethodAndClass methodAndClass = SootMethodRepresentationParser.v().parseSootMethodString(method);
 							if (!Scene.v().containsClass(methodAndClass.getClassName())) {
-								System.err.println("Class for entry point " + method + " not found, skipping...");
+								logger.warn("Class for entry point {} not found, skipping...", method);
 								continue;
 							}
 							sm = findMethod(Scene.v().getSootClass(methodAndClass.getClassName()),
 									methodAndClass.getSubSignature());
 							if (sm == null) {
-								System.err.println("Method for entry point " + method + " not found in class, skipping...");
+								logger.warn("Method for entry point {} not found in class, skipping...", method);
 								continue;
 							}
 						}
@@ -281,7 +285,7 @@ public class AndroidEntryPointCreator extends BaseEntryPointCreator implements I
 				if (instanceNeeded && !localVarsForClasses.containsKey(currentClass.getName())){
 					Local localVal = generateClassConstructor(currentClass, body);
 					if (localVal == null) {
-						System.err.println("Constructor cannot be generated for " + currentClass.getName());
+						logger.warn("Constructor cannot be generated for {}", currentClass.getName());
 						continue;
 					}
 					localVarsForClasses.put(currentClass.getName(), localVal);
@@ -314,7 +318,7 @@ public class AndroidEntryPointCreator extends BaseEntryPointCreator implements I
 					body.getUnits().add(beforeClassStmt);
 					for(SootMethod currentMethod : plainMethods.values()) {
 						if (!currentMethod.isStatic() && classLocal == null) {
-							System.out.println("Skipping method " + currentMethod + " because we have no instance");
+							logger.warn("Skipping method {} because we have no instance", currentMethod);
 							continue;
 						}
 						
@@ -355,7 +359,7 @@ public class AndroidEntryPointCreator extends BaseEntryPointCreator implements I
 		body.getUnits().add(Jimple.v().newReturnVoidStmt());
 		if (DEBUG)
 			mainMethod.getActiveBody().validate();
-		System.out.println("Generated main method:\n" + body);
+		logger.info("Generated main method:\n{}", body);
 		return mainMethod;
 	}
 
@@ -772,7 +776,7 @@ public class AndroidEntryPointCreator extends BaseEntryPointCreator implements I
 			SootClass theClass = Scene.v().getSootClass(methodAndClass.getClassName());
 			SootMethod theMethod = findMethod(theClass, methodAndClass.getSubSignature());
 			if (theMethod == null) {
-				System.err.println("Could not find callback method " + methodAndClass.getSignature());
+				logger.warn("Could not find callback method {}", methodAndClass.getSignature());
 				continue;
 			}
 			
@@ -810,8 +814,7 @@ public class AndroidEntryPointCreator extends BaseEntryPointCreator implements I
 				// if we need to call a constructor, we insert the respective Jimple statement here
 				Local classLocal = generateClassConstructor(callbackClass, body, referenceClasses);
 				if (classLocal == null) {
-					System.out.println("Constructor cannot be generated for callback class "
-							+ callbackClass.getName());
+					logger.warn("Constructor cannot be generated for callback class {}", callbackClass.getName());
 					continue;
 				}
 				classLocals.add(classLocal);
@@ -840,7 +843,7 @@ public class AndroidEntryPointCreator extends BaseEntryPointCreator implements I
 		
 		SootMethod method = findMethod(currentClass, subsignature);
 		if (method == null) {
-			System.err.println("Could not find Android entry point method: " + subsignature);
+			logger.warn("Could not find Android entry point method: {}", subsignature);
 			return null;
 		}
 		entryPoints.remove(method.getSignature());

@@ -12,6 +12,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import soot.Local;
 import soot.SootMethod;
 import soot.Unit;
@@ -44,7 +46,9 @@ public class InfoflowProblem extends AbstractInfoflowProblem {
 	private final static boolean DEBUG = false;
 	private final ISourceSinkManager sourceSinkManager;
 	private Abstraction zeroValue = null;
-	
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
 	/**
 	 * Computes the taints produced by a taint wrapper object
 	 * @param iStmt The call statement the taint wrapper shall check for well-
@@ -744,8 +748,7 @@ public class InfoflowProblem extends AbstractInfoflowProblem {
 							if (iStmt instanceof AssignStmt) {
 								final AssignStmt stmt = (AssignStmt) iStmt;
 								if (sourceSinkManager.isSource(stmt, interproceduralCFG())) {
-									if (DEBUG)
-										System.out.println("Found source: " + stmt.getInvokeExpr().getMethod());
+									logger.debug("Found source: " + stmt.getInvokeExpr().getMethod());
 									Abstraction abs; 
 									if (pathTracking == PathTrackingMethod.ForwardTracking)
 										abs = new AbstractionWithPath(stmt.getLeftOp(),

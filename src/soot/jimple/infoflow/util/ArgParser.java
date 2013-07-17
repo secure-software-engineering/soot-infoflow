@@ -1,5 +1,8 @@
 package soot.jimple.infoflow.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -10,6 +13,7 @@ import java.util.List;
  *
  */
 public class ArgParser {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 	public static String METHODKEYWORD = "-entrypoints";
 	public static String SOURCEKEYWORD = "-sources";
 	public static String SINKKEYWORD = "-sinks";
@@ -25,7 +29,7 @@ public class ArgParser {
 		if(argList.contains(METHODKEYWORD)){
 			ePointList = getListToAttribute(argList, METHODKEYWORD);
 		} else{
-			System.err.println("parameter '"+ METHODKEYWORD+ "' is missing or has not enough arguments!");
+			logger.error("parameter '"+ METHODKEYWORD+ "' is missing or has not enough arguments!");
 			return null;
 		}
 		if(argList.contains(SOURCEKEYWORD)){
