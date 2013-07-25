@@ -14,10 +14,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import soot.Local;
-import soot.SootMethod;
-import soot.Unit;
-import soot.Value;
+import soot.*;
 import soot.jimple.ArrayRef;
 import soot.jimple.AssignStmt;
 import soot.jimple.CaughtExceptionRef;
@@ -39,6 +36,9 @@ import soot.jimple.infoflow.source.DefaultSourceSinkManager;
 import soot.jimple.infoflow.source.ISourceSinkManager;
 import soot.jimple.infoflow.util.BaseSelector;
 import soot.jimple.toolkits.ide.icfg.JimpleBasedBiDiICFG;
+import soot.tagkit.LineNumberTag;
+import soot.tagkit.SourceFileTag;
+import soot.util.SootAnnotationUtils;
 
 public class InfoflowProblem extends AbstractInfoflowProblem {
 
@@ -51,8 +51,7 @@ public class InfoflowProblem extends AbstractInfoflowProblem {
 	/**
 	 * Computes the taints produced by a taint wrapper object
 	 * @param iStmt The call statement the taint wrapper shall check for well-
-	 * known methods that introduce black-box taint propagation 
-	 * @param callArgs The actual parameters with which the method in invoked
+	 * known methods that introduce black-box taint propagation
 	 * @param source The taint source
 	 * @return The taints computed by the wrapper
 	 */
@@ -426,6 +425,11 @@ public class InfoflowProblem extends AbstractInfoflowProblem {
 
 			@Override
 			public FlowFunction<Abstraction> getCallFlowFunction(final Unit src, final SootMethod dest) {
+                if (! dest.hasActiveBody()){
+                    logger.debug("Call skipped because target has no body: {} -> {}", src, dest);
+                    return Identity.v();
+                }
+
 				final Stmt stmt = (Stmt) src;
 				final InvokeExpr ie = stmt.getInvokeExpr();
 				final List<Value> callArgs = ie.getArgs();

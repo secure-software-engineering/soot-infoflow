@@ -43,10 +43,18 @@ public abstract class JUnitTests {
     @BeforeClass
     public static void setUp() throws IOException
     {
+        final String sep = System.getProperty("path.separator");
     	File f = new File(".");
-    	path = System.getProperty("java.home") + File.separator + "lib" +File.separator + "rt.jar"
-    			+ System.getProperty("path.separator") + f.getCanonicalPath() + File.separator + "bin"
-    			+ System.getProperty("path.separator") + f.getCanonicalPath() + File.separator + "build" + File.separator + "classes";
+        File testSrc1 = new File(f,"bin");
+        File testSrc2 = new File(f,"build" + File.separator + "classes");
+
+        if (! (testSrc1.exists() || testSrc2.exists())){
+            fail("Test aborted - none of the test sources are available");
+        }
+
+    	path = System.getProperty("java.home") + File.separator + "lib" + File.separator + "rt.jar"
+    			+ sep + testSrc1.getCanonicalPath()
+    			+ sep + testSrc2.getCanonicalPath();
     	
         sources = new ArrayList<String>();
         sources.add(sourcePwd);
