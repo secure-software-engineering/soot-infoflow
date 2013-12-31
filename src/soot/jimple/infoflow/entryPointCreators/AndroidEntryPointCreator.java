@@ -10,14 +10,8 @@
  ******************************************************************************/
 package soot.jimple.infoflow.entryPointCreators;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -207,7 +201,7 @@ public class AndroidEntryPointCreator extends BaseEntryPointCreator implements I
 		// If we have an application, we need to start it in the very beginning
 		for (Entry<String, List<String>> entry : classMap.entrySet()) {
 			SootClass currentClass = Scene.v().getSootClass(entry.getKey());
-			List<SootClass> extendedClasses = Scene.v().getActiveHierarchy().getSuperclassesOf(currentClass);
+			Collection<SootClass> extendedClasses = Scene.v().getActiveHierarchy().getSuperclassesOf(currentClass);
 			for(SootClass sc : extendedClasses)
 				if(sc.getName().equals(AndroidEntryPointConstants.APPLICATIONCLASS)) {
 					if (applicationClass != null)
@@ -410,7 +404,7 @@ public class AndroidEntryPointCreator extends BaseEntryPointCreator implements I
 		
 		// Check the type of this class
 		ComponentType ctype = ComponentType.Plain;
-		List<SootClass> extendedClasses = Scene.v().getActiveHierarchy().getSuperclassesOf(currentClass);
+		Collection<SootClass> extendedClasses = Scene.v().getActiveHierarchy().getSuperclassesOf(currentClass);
 		for(SootClass sc : extendedClasses) {
 			if(sc.getName().equals(AndroidEntryPointConstants.APPLICATIONCLASS))
 				ctype = ComponentType.Application;

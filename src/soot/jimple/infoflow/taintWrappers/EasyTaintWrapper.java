@@ -85,39 +85,43 @@ public class EasyTaintWrapper extends AbstractTaintWrapper {
     }
 
 	public EasyTaintWrapper(File f) throws IOException{
-		BufferedReader reader = null;
-		try{
-			FileReader freader = new FileReader(f);
-			reader = new BufferedReader(freader);
-			String line = reader.readLine();
-			List<String> methodList = new LinkedList<String>();
-			List<String> excludeList = new LinkedList<String>();
-			List<String> killList = new LinkedList<String>();
-			this.includeList = new HashSet<String>();
-			while(line != null){
-				if (!line.isEmpty() && !line.startsWith("%"))
-					if (line.startsWith("~"))
-						excludeList.add(line.substring(1));
-					else if (line.startsWith("-"))
-						killList.add(line.substring(1));
-					else if (line.startsWith("^"))
-						includeList.add(line.substring(1));
-					else
-						methodList.add(line);
-				line = reader.readLine();
-			}
-			this.classList = SootMethodRepresentationParser.v().parseClassNames(methodList, true);
-			this.excludeList = SootMethodRepresentationParser.v().parseClassNames(excludeList, true);
-			this.killList = SootMethodRepresentationParser.v().parseClassNames(killList, true);
-			logger.info("Loaded wrapper entries for {} classes and {} exclusions.", classList.size(), excludeList.size());
-		}
-		finally {
-			if (reader != null)
-				reader.close();
-		}
+        this(new BufferedReader(new FileReader(f)));
 	}
-	
-	@Override
+
+    public EasyTaintWrapper(InputStream is) throws IOException {
+        this(new BufferedReader(new InputStreamReader(is)));
+    }
+
+    private EasyTaintWrapper(BufferedReader reader) throws IOException {
+        try {
+        this.includeList = new HashSet<String>();
+        String line = reader.readLine();
+        List<String> methodList = new LinkedList<String>();
+        List<String> excludeList = new LinkedList<String>();
+        List<String> killList = new LinkedList<String>();
+        while(line != null){
+            if (!line.isEmpty() && !line.startsWith("%"))
+                if (line.startsWith("~"))
+                    excludeList.add(line.substring(1));
+                else if (line.startsWith("-"))
+                    killList.add(line.substring(1));
+                else if (line.startsWith("^"))
+                    includeList.add(line.substring(1));
+                else
+                    methodList.add(line);
+            line = reader.readLine();
+        }
+        this.classList = SootMethodRepresentationParser.v().parseClassNames(methodList, true);
+        this.excludeList = SootMethodRepresentationParser.v().parseClassNames(excludeList, true);
+        this.killList = SootMethodRepresentationParser.v().parseClassNames(killList, true);
+        logger.info("Loaded wrapper entries for {} classes and {} exclusions.", classList.size(), excludeList.size());
+        } finally{
+            reader.close();
+        }
+    }
+
+
+    @Override
 	public Set<AccessPath> getTaintsForMethod(Stmt stmt, AccessPath taintedPath) {
 		if (!stmt.containsInvokeExpr())
 			return Collections.emptySet();
@@ -224,7 +228,7 @@ public class EasyTaintWrapper extends AbstractTaintWrapper {
 		if(!c.isInterface()) {
 			// We have to walk up the hierarchy to also include all methods
 			// registered for superclasses
-			List<SootClass> superclasses = Scene.v().getActiveHierarchy().getSuperclassesOf(c);
+			Collection<SootClass> superclasses = Scene.v().getActiveHierarchy().getSuperclassesOf(c);
 			for(SootClass sclass : superclasses){
 				if(classList.containsKey(sclass.getName()))
 					methodList.addAll(getMethodsForClass(sclass));
@@ -246,7 +250,7 @@ public class EasyTaintWrapper extends AbstractTaintWrapper {
 		if(!c.isInterface()) {
 			// We have to walk up the hierarchy to also include all methods
 			// registered for superclasses
-			List<SootClass> superclasses = Scene.v().getActiveHierarchy().getSuperclassesOf(c);
+			Collection<SootClass> superclasses = Scene.v().getActiveHierarchy().getSuperclassesOf(c);
 			for(SootClass sclass : superclasses){
 				if(classList.containsKey(sclass.getName()))
 					return true;

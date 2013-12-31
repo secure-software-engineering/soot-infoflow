@@ -11,14 +11,7 @@
 package soot.jimple.infoflow.entryPointCreators;
 
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -336,7 +329,7 @@ public abstract class BaseEntryPointCreator implements IEntryPointCreator {
 		if(createdClass.isInterface() || createdClass.isAbstract()){
 			if(substituteCallParams) {
 				// Find a matching implementor of the interface
-				List<SootClass> classes;
+				Collection<SootClass> classes;
 				if (createdClass.isInterface())
 					classes = Scene.v().getActiveHierarchy().getImplementersOf(createdClass);
 				else
