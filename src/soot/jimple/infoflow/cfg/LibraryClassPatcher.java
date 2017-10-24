@@ -270,7 +270,7 @@ public class LibraryClassPatcher {
 		sc.setLibraryClass();
 
 		SootClass runnable = Scene.v().getSootClassUnsafe("java.lang.Runnable");
-		if (sc == null || sc.resolvingLevel() < SootClass.SIGNATURES)
+		if (runnable == null || runnable.resolvingLevel() < SootClass.SIGNATURES)
 			return;
 
 		SootMethod smPost = sc.getMethodUnsafe("boolean post(java.lang.Runnable)");
