@@ -1,0 +1,593 @@
+package soot.jimple.infoflow.cfg;
+
+import soot.Body;
+import soot.BooleanType;
+import soot.Local;
+import soot.Scene;
+import soot.SootClass;
+import soot.SootMethod;
+import soot.Unit;
+import soot.javaToJimple.LocalGenerator;
+import soot.jimple.Constant;
+import soot.jimple.InvokeExpr;
+import soot.jimple.Jimple;
+import soot.jimple.LongConstant;
+import soot.jimple.Stmt;
+import soot.jimple.StringConstant;
+
+public class HandlerClassPatcher {
+	
+	private final Constant stubConst = StringConstant.v("Stub!");
+
+	public HandlerClassPatcher() {
+
+	}
+	
+	/**
+	 * Patches all handlerMessage invocations
+	 */
+	public void patchHandlers() {
+		// Patch the android.os.Handler implementation
+		patchHandlerImplementation();
+	}
+	
+	/**
+	 * Creates a dummy implementation of android.os.Handler if we don't have one
+	 */
+	private void patchHandlerImplementation() {
+		SootClass sc = Scene.v().getSootClassUnsafe("android.os.Handler");
+		if (sc == null || sc.resolvingLevel() < SootClass.SIGNATURES)
+			return;
+		sc.setLibraryClass();
+
+		// sendEmptyMessage -> sendEmptyMessageDelayed
+		SootMethod smSendEmptyMessage = sc.getMethodUnsafe("boolean sendEmptyMessage(int)");
+		// System.out.println(smSendEmptyMessage.retrieveActiveBody().toString());
+		// sendEmptyMessageAtTime -> sendMessageAtTime
+		SootMethod smSendEmptyMessageAtTime = sc.getMethodUnsafe("boolean sendEmptyMessageAtTime(int,long)");
+		// System.out.println(smSendEmptyMessageAtTime.retrieveActiveBody().toString());
+		// sendEmptyMessageDelayed -> sendMessageDelayed
+		SootMethod smSendEmptyMessageDelayed = sc.getMethodUnsafe("boolean sendEmptyMessageDelayed(int,long)");
+		// System.out.println(smSendEmptyMessageDelayed.retrieveActiveBody().toString());
+		// sendMessage -> sendMessageDelayed
+		SootMethod smSendMessage = sc.getMethodUnsafe("boolean sendMessage(android.os.Message)");
+		// System.out.println(smSendMessage.retrieveActiveBody().toString());
+		// 
+		SootMethod smSendMessageAtFrontOfQueue = sc.getMethodUnsafe("boolean sendMessageAtFrontOfQueue(android.os.Message)");
+		// System.out.println(smSendMessageAtFrontOfQueue.retrieveActiveBody().toString());
+		// 
+		SootMethod smSendMessageAtTime = sc.getMethodUnsafe("boolean sendMessageAtTime(android.os.Message,long)");
+		// System.out.println(smSendMessageAtTime.retrieveActiveBody().toString());
+		// sendMessageDelayed -> sendMessageAtTime
+		SootMethod smSendMessageDelayed =sc.getMethodUnsafe("boolean sendMessageDelayed(android.os.Message,long)");
+		// System.out.println(smSendMessageDelayed.retrieveActiveBody().toString());
+		
+		// System.exit(0);
+		
+		if (smSendEmptyMessage != null && (!smSendEmptyMessage.hasActiveBody() || isStubImplementation(smSendEmptyMessage.getActiveBody()))) {
+			// System.out.println(smSendEmptyMessage.getSignature());
+			patchSendEmptyMessage(smSendEmptyMessage);
+			smSendEmptyMessage.addTag(new FlowDroidEssentialMethodTag());
+		}
+		
+		if (smSendEmptyMessageAtTime != null && (!smSendEmptyMessageAtTime.hasActiveBody() || isStubImplementation(smSendEmptyMessageAtTime.getActiveBody()))) {
+			// System.out.println(smSendEmptyMessageAtTime.getSignature());
+			patchSendEmptyMessageAtTime(smSendEmptyMessageAtTime);
+			smSendEmptyMessageAtTime.addTag(new FlowDroidEssentialMethodTag());
+		}
+		
+		if (smSendEmptyMessageDelayed != null && (!smSendEmptyMessageDelayed.hasActiveBody() || isStubImplementation(smSendEmptyMessageDelayed.getActiveBody()))) {
+			// System.out.println(smSendEmptyMessageDelayed.getSignature());
+			patchSendEmptyMessageDelayed(smSendEmptyMessageDelayed);
+			smSendEmptyMessageDelayed.addTag(new FlowDroidEssentialMethodTag());
+		}
+		
+		if (smSendMessage != null && (!smSendMessage.hasActiveBody() || isStubImplementation(smSendMessage.getActiveBody()))) {
+			// System.out.println(smSendMessage.getSignature());
+			patchSendMessage(smSendMessage);
+			smSendMessage.addTag(new FlowDroidEssentialMethodTag());
+		}
+		
+		if (smSendMessageAtFrontOfQueue != null && (!smSendMessageAtFrontOfQueue.hasActiveBody() || isStubImplementation(smSendMessageAtFrontOfQueue.getActiveBody()))) {
+			// System.out.println(smSendMessageAtFrontOfQueue.getSignature());
+			patchSendMessageAtFrontOfQueue(smSendMessageAtFrontOfQueue);
+			smSendMessageAtFrontOfQueue.addTag(new FlowDroidEssentialMethodTag());
+		}
+		
+		if (smSendMessageAtTime != null && (!smSendMessageAtTime.hasActiveBody() || isStubImplementation(smSendMessageAtTime.getActiveBody()))) {
+			// System.out.println(smSendMessageAtTime.getSignature());
+			patchSendMessageAtTime(smSendMessageAtTime);
+			smSendMessageAtTime.addTag(new FlowDroidEssentialMethodTag());
+		}
+				
+		if (smSendMessageDelayed != null && (!smSendMessageDelayed.hasActiveBody() || isStubImplementation(smSendMessageDelayed.getActiveBody()))) {
+			// System.out.println(smSendMessageDelayed.getSignature());
+			patchSendMessageDelayed(smSendMessageDelayed);
+			smSendMessageDelayed.addTag(new FlowDroidEssentialMethodTag());
+		}
+	}
+	
+	/*
+	public final boolean sendEmptyMessage(int)
+    {
+        android.os.Handler r0;
+        int i0;
+        boolean $z0;
+
+        r0 := @this: android.os.Handler;
+        i0 := @parameter0: int;
+        
+        $z0 = virtualinvoke r0.<android.os.Handler: boolean sendEmptyMessageDelayed(int,long)>(i0, 0L);
+        return $z0;
+    }
+    */
+	private Body patchSendEmptyMessage(SootMethod method) {
+		// init
+		SootClass HandlerClass = method.getDeclaringClass();
+		HandlerClass.setLibraryClass();
+		method.setPhantom(false);
+
+		Body body = Jimple.v().newBody(method);
+		method.setActiveBody(body);
+
+		LocalGenerator localGenerator = new LocalGenerator(method.getActiveBody());
+		
+		// this local
+		Local thisLocal = localGenerator.generateLocal(HandlerClass.getType());
+		body.getUnits().add(Jimple.v().newIdentityStmt(thisLocal, Jimple.v().newThisRef(HandlerClass.getType())));
+
+		// parameter local
+		Local firstParam = null;
+		for (int i = 0; i < method.getParameterCount(); i++) {
+			Local paramLocal = localGenerator.generateLocal(method.getParameterType(i));
+			body.getUnits().add(Jimple.v().newIdentityStmt(paramLocal, Jimple.v().newParameterRef(method.getParameterType(i), i)));
+			if (i == 0)
+				firstParam = paramLocal;
+		}
+		
+		// $z0 = virtualinvoke r0.<android.os.Handler: boolean sendEmptyMessageDelayed(int,long)>(i0, 0L);
+		SootMethod smSendEmptyMessageDelayed = HandlerClass.getMethodUnsafe("boolean sendEmptyMessageDelayed(int,long)");
+		assert smSendEmptyMessageDelayed != null;
+		Local lhs_0 = localGenerator.generateLocal(BooleanType.v());
+		InvokeExpr expr_0 = Jimple.v().newVirtualInvokeExpr(thisLocal, smSendEmptyMessageDelayed.makeRef(), firstParam, LongConstant.v(0));
+		Unit unit_0 = Jimple.v().newAssignStmt(lhs_0, expr_0);
+		body.getUnits().add(unit_0);
+		
+		// return $z0;
+		Unit unit_1 = Jimple.v().newReturnStmt(lhs_0);
+		body.getUnits().add(unit_1);
+		return body;
+	}
+	
+	/*
+	public final boolean sendEmptyMessageAtTime(int, long)
+    {
+        android.os.Handler r0;
+        int i0;
+        long l1;
+        android.os.Message r1;
+        boolean $z0;
+
+        r0 := @this: android.os.Handler;
+        i0 := @parameter0: int;
+        l1 := @parameter1: long;
+        
+        r1 = staticinvoke <android.os.Message: android.os.Message obtain()>();
+        r1.<android.os.Message: int what> = i0;
+        $z0 = virtualinvoke r0.<android.os.Handler: boolean sendMessageAtTime(android.os.Message,long)>(r1, l1);
+        return $z0;
+    }
+    */
+	private Body patchSendEmptyMessageAtTime(SootMethod method) {
+		// init
+		SootClass HandlerClass = method.getDeclaringClass();
+		HandlerClass.setLibraryClass();
+		method.setPhantom(false);
+
+		Body body = Jimple.v().newBody(method);
+		method.setActiveBody(body);
+
+		LocalGenerator localGenerator = new LocalGenerator(method.getActiveBody());
+		SootClass MessageClass = Scene.v().getSootClass("android.os.Message");
+				
+		// this local
+		Local thisLocal = localGenerator.generateLocal(HandlerClass.getType());
+		body.getUnits().add(Jimple.v().newIdentityStmt(thisLocal, Jimple.v().newThisRef(HandlerClass.getType())));
+
+		// parameter local
+		Local firstParam = null;
+		Local secondParam = null;
+		for (int i = 0; i < method.getParameterCount(); i++) {
+			Local paramLocal = localGenerator.generateLocal(method.getParameterType(i));
+			body.getUnits().add(Jimple.v().newIdentityStmt(paramLocal, Jimple.v().newParameterRef(method.getParameterType(i), i)));
+			if (i == 0)
+				firstParam = paramLocal;
+			if (i == 1)
+				secondParam = paramLocal;
+		}
+				
+		// r1 = staticinvoke <android.os.Message: android.os.Message obtain()>();
+		SootMethod smObtain = MessageClass.getMethodUnsafe("android.os.Message obtain()");
+		assert smObtain != null;
+		Local lhs_0 = localGenerator.generateLocal(MessageClass.getType());
+		InvokeExpr expr_0 = Jimple.v().newStaticInvokeExpr(smObtain.makeRef());
+		Unit unit_0 = Jimple.v().newAssignStmt(lhs_0, expr_0);
+		body.getUnits().add(unit_0);
+		
+		// r1.<android.os.Message: int what> = i0;
+		Local base_1 = lhs_0;
+		Unit unit_1 = Jimple.v().newAssignStmt(Jimple.v().newInstanceFieldRef(base_1, MessageClass.getFieldByName("what").makeRef()), firstParam);
+		body.getUnits().add(unit_1);
+		
+		// $z0 = virtualinvoke r0.<android.os.Handler: boolean sendMessageAtTime(android.os.Message,long)>(r1, l1);
+		SootMethod smSendMessageAtTime = HandlerClass.getMethodUnsafe("boolean sendMessageAtTime(android.os.Message,long)");
+		assert smSendMessageAtTime != null;
+		Local lhs_2 = localGenerator.generateLocal(BooleanType.v());
+		InvokeExpr expr_2 = Jimple.v().newVirtualInvokeExpr(thisLocal, smSendMessageAtTime.makeRef(), lhs_0, secondParam);
+		Unit unit_2 = Jimple.v().newAssignStmt(lhs_0, expr_0);
+		body.getUnits().add(unit_2);
+				
+		// return $z0;
+		Unit uint_3 = Jimple.v().newReturnStmt(lhs_2);
+		body.getUnits().add(uint_3);
+		return body;
+	}
+
+	/*
+	public final boolean sendEmptyMessageDelayed(int, long)
+    {
+        android.os.Handler r0;
+        int i0;
+        long l1;
+        android.os.Message r1;
+        boolean $z0;
+
+        r0 := @this: android.os.Handler;
+        i0 := @parameter0: int;
+        l1 := @parameter1: long;
+
+        r1 = staticinvoke <android.os.Message: android.os.Message obtain()>();
+        r1.<android.os.Message: int what> = i0;
+        $z0 = virtualinvoke r0.<android.os.Handler: boolean sendMessageDelayed(android.os.Message,long)>(r1, l1);
+        return $z0;
+    }
+    */
+	private Body patchSendEmptyMessageDelayed(SootMethod method) {
+		// init
+		SootClass HandlerClass = method.getDeclaringClass();
+		HandlerClass.setLibraryClass();
+		method.setPhantom(false);
+
+		Body body = Jimple.v().newBody(method);
+		method.setActiveBody(body);
+
+		LocalGenerator localGenerator = new LocalGenerator(method.getActiveBody());
+		SootClass MessageClass = Scene.v().getSootClass("android.os.Message");
+						
+		// this local
+		Local thisLocal = localGenerator.generateLocal(HandlerClass.getType());
+		body.getUnits().add(Jimple.v().newIdentityStmt(thisLocal, Jimple.v().newThisRef(HandlerClass.getType())));
+
+		// parameter local
+		Local firstParam = null;
+		Local secondParam = null;
+		for (int i = 0; i < method.getParameterCount(); i++) {
+			Local paramLocal = localGenerator.generateLocal(method.getParameterType(i));
+			body.getUnits().add(Jimple.v().newIdentityStmt(paramLocal, Jimple.v().newParameterRef(method.getParameterType(i), i)));
+			if (i == 0)
+				firstParam = paramLocal;
+			if (i == 1)
+				secondParam = paramLocal;
+		}
+						
+		// r1 = staticinvoke <android.os.Message: android.os.Message obtain()>();
+		SootMethod smObtain = MessageClass.getMethodUnsafe("android.os.Message obtain()");
+		assert smObtain != null;
+		Local lhs_0 = localGenerator.generateLocal(MessageClass.getType());
+		InvokeExpr expr_0 = Jimple.v().newStaticInvokeExpr(smObtain.makeRef());
+		Unit unit_0 = Jimple.v().newAssignStmt(lhs_0, expr_0);
+		body.getUnits().add(unit_0);
+				
+		// r1.<android.os.Message: int what> = i0;
+		Local base_1 = lhs_0;
+		Unit unit_1 = Jimple.v().newAssignStmt(Jimple.v().newInstanceFieldRef(base_1, MessageClass.getFieldByName("what").makeRef()), firstParam);
+		body.getUnits().add(unit_1);
+				
+		// $z0 = virtualinvoke r0.<android.os.Handler: boolean sendMessageDelayed(android.os.Message,long)>(r1, l1);
+		SootMethod smSendMessageDelayed = HandlerClass.getMethodUnsafe("boolean sendMessageDelayed(android.os.Message,long)");
+		assert smSendMessageDelayed != null;
+		Local lhs_2 = localGenerator.generateLocal(BooleanType.v());
+		InvokeExpr expr_2 = Jimple.v().newVirtualInvokeExpr(thisLocal, smSendMessageDelayed.makeRef(), lhs_0, secondParam);
+		Unit unit_2 = Jimple.v().newAssignStmt(lhs_0, expr_0);
+		body.getUnits().add(unit_2);
+						
+		// return $z0;
+		Unit uint_3 = Jimple.v().newReturnStmt(lhs_2);
+		body.getUnits().add(uint_3);
+		return body;
+	}
+	
+	/*
+	public final boolean sendMessage(android.os.Message)
+    {
+        android.os.Handler r0;
+        android.os.Message r1;
+        boolean $z0;
+
+        r0 := @this: android.os.Handler;
+        r1 := @parameter0: android.os.Message;
+        
+        $z0 = virtualinvoke r0.<android.os.Handler: boolean sendMessageDelayed(android.os.Message,long)>(r1, 0L);
+        return $z0;
+    }
+	*/
+	private Body patchSendMessage(SootMethod method) {
+		// init
+		SootClass HandlerClass = method.getDeclaringClass();
+		HandlerClass.setLibraryClass();
+		method.setPhantom(false);
+
+		Body body = Jimple.v().newBody(method);
+		method.setActiveBody(body);
+
+		LocalGenerator localGenerator = new LocalGenerator(method.getActiveBody());
+				
+		// this local
+		Local thisLocal = localGenerator.generateLocal(HandlerClass.getType());
+		body.getUnits().add(Jimple.v().newIdentityStmt(thisLocal, Jimple.v().newThisRef(HandlerClass.getType())));
+
+		// parameter local
+		Local firstParam = null;
+		for (int i = 0; i < method.getParameterCount(); i++) {
+			Local paramLocal = localGenerator.generateLocal(method.getParameterType(i));
+			body.getUnits().add(Jimple.v().newIdentityStmt(paramLocal, Jimple.v().newParameterRef(method.getParameterType(i), i)));
+			if (i == 0)
+				firstParam = paramLocal;
+		}
+				
+		// $z0 = virtualinvoke r0.<android.os.Handler: boolean sendMessageDelayed(android.os.Message,long)>(r1, 0L);
+		SootMethod smSendMessageDelayed = HandlerClass.getMethodUnsafe("boolean sendMessageDelayed(android.os.Message,long)");
+		assert smSendMessageDelayed != null;
+		Local lhs_0 = localGenerator.generateLocal(BooleanType.v());
+		InvokeExpr expr_0 = Jimple.v().newVirtualInvokeExpr(thisLocal, smSendMessageDelayed.makeRef(), firstParam, LongConstant.v(0));
+		Unit unit_0 = Jimple.v().newAssignStmt(lhs_0, expr_0);
+		body.getUnits().add(unit_0);
+				
+		// return $z0;
+		Unit unit_1 = Jimple.v().newReturnStmt(lhs_0);
+		body.getUnits().add(unit_1);
+		return body;
+	}
+	
+	/*
+	public final boolean sendMessageAtFrontOfQueue(android.os.Message)
+    {
+        android.os.Handler r0;
+        android.os.Message r1;
+        android.os.MessageQueue r2;
+        java.lang.RuntimeException r3, $r4;
+        boolean $z0;
+        java.lang.StringBuilder $r5, $r6, $r7;
+        java.lang.String $r8, $r9;
+
+        r0 := @this: android.os.Handler;
+        r1 := @parameter0: android.os.Message;
+        
+        r2 = r0.<android.os.Handler: android.os.MessageQueue mQueue>;
+        if r2 != null goto label1;
+        $r4 = new java.lang.RuntimeException;
+        $r5 = new java.lang.StringBuilder;
+        specialinvoke $r5.<java.lang.StringBuilder: void <init>()>();
+        $r6 = virtualinvoke $r5.<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.Object)>(r0);
+        $r7 = virtualinvoke $r6.<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)>(" sendMessageAtTime() called with no mQueue");
+        $r8 = virtualinvoke $r7.<java.lang.StringBuilder: java.lang.String toString()>();
+        specialinvoke $r4.<java.lang.RuntimeException: void <init>(java.lang.String)>($r8);
+        r3 = $r4;
+        $r9 = virtualinvoke r3.<java.lang.RuntimeException: java.lang.String getMessage()>();
+        staticinvoke <android.util.Log: int w(java.lang.String,java.lang.String,java.lang.Throwable)>("Looper", $r9, r3);
+        return 0;
+     label1:
+        $z0 = specialinvoke r0.<android.os.Handler: boolean enqueueMessage(android.os.MessageQueue,android.os.Message,long)>(r2, r1, 0L);
+        return $z0;
+    }
+	*/
+	private Body patchSendMessageAtFrontOfQueue(SootMethod method) {
+		// init
+		SootClass HandlerClass = method.getDeclaringClass();
+		HandlerClass.setLibraryClass();
+		method.setPhantom(false);
+
+		Body body = Jimple.v().newBody(method);
+		method.setActiveBody(body);
+
+		LocalGenerator localGenerator = new LocalGenerator(method.getActiveBody());
+						
+		// this local
+		Local thisLocal = localGenerator.generateLocal(HandlerClass.getType());
+		body.getUnits().add(Jimple.v().newIdentityStmt(thisLocal, Jimple.v().newThisRef(HandlerClass.getType())));
+
+		// parameter local
+		Local firstParam = null;
+		for (int i = 0; i < method.getParameterCount(); i++) {
+			Local paramLocal = localGenerator.generateLocal(method.getParameterType(i));
+			body.getUnits().add(Jimple.v().newIdentityStmt(paramLocal, Jimple.v().newParameterRef(method.getParameterType(i), i)));
+			if (i == 0)
+				firstParam = paramLocal;
+		}
+						
+		// $z0 = virtualinvoke r0.<android.os.Handler: void handleMessage(android.os.Message)>(r1);
+		SootMethod smHandleMessage = HandlerClass.getMethodUnsafe("void handleMessage(android.os.Message)");
+		assert smHandleMessage != null;
+		Local lhs_0 = localGenerator.generateLocal(BooleanType.v());
+		InvokeExpr expr_0 = Jimple.v().newVirtualInvokeExpr(thisLocal, smHandleMessage.makeRef(), firstParam);
+		Unit unit_0 = Jimple.v().newAssignStmt(lhs_0, expr_0);
+		body.getUnits().add(unit_0);
+						
+		// return;
+		Unit unit_1 = Jimple.v().newReturnVoidStmt();
+		body.getUnits().add(unit_1);
+		return body;
+	}
+	
+	/*
+	public boolean sendMessageAtTime(android.os.Message, long)
+    {
+        android.os.Handler r0;
+        android.os.Message r1;
+        long l0;
+        android.os.MessageQueue r2;
+        java.lang.RuntimeException r3, $r4;
+        boolean $z0;
+        java.lang.StringBuilder $r5, $r6, $r7;
+        java.lang.String $r8, $r9;
+
+        r0 := @this: android.os.Handler;
+        r1 := @parameter0: android.os.Message;
+        l0 := @parameter1: long;
+        
+        r2 = r0.<android.os.Handler: android.os.MessageQueue mQueue>;
+        if r2 != null goto label1;
+        $r4 = new java.lang.RuntimeException;
+        $r5 = new java.lang.StringBuilder;
+        specialinvoke $r5.<java.lang.StringBuilder: void <init>()>();
+        $r6 = virtualinvoke $r5.<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.Object)>(r0);
+        $r7 = virtualinvoke $r6.<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)>(" sendMessageAtTime() called with no mQueue");
+        $r8 = virtualinvoke $r7.<java.lang.StringBuilder: java.lang.String toString()>();
+        specialinvoke $r4.<java.lang.RuntimeException: void <init>(java.lang.String)>($r8);
+        r3 = $r4;
+        $r9 = virtualinvoke r3.<java.lang.RuntimeException: java.lang.String getMessage()>();
+        staticinvoke <android.util.Log: int w(java.lang.String,java.lang.String,java.lang.Throwable)>("Looper", $r9, r3);
+        return 0;
+     label1:
+        $z0 = specialinvoke r0.<android.os.Handler: boolean enqueueMessage(android.os.MessageQueue,android.os.Message,long)>(r2, r1, l0);
+        return $z0;
+    }
+	*/
+	private Body patchSendMessageAtTime(SootMethod method) {
+		// init
+		SootClass HandlerClass = method.getDeclaringClass();
+		HandlerClass.setLibraryClass();
+		method.setPhantom(false);
+
+		Body body = Jimple.v().newBody(method);
+		method.setActiveBody(body);
+
+		LocalGenerator localGenerator = new LocalGenerator(method.getActiveBody());
+								
+		// this local
+		Local thisLocal = localGenerator.generateLocal(HandlerClass.getType());
+		body.getUnits().add(Jimple.v().newIdentityStmt(thisLocal, Jimple.v().newThisRef(HandlerClass.getType())));
+
+		// parameter local
+		Local firstParam = null;
+		for (int i = 0; i < method.getParameterCount(); i++) {
+			Local paramLocal = localGenerator.generateLocal(method.getParameterType(i));
+			body.getUnits().add(Jimple.v().newIdentityStmt(paramLocal, Jimple.v().newParameterRef(method.getParameterType(i), i)));
+			if (i == 0)
+				firstParam = paramLocal;
+		}
+								
+		// $z0 = virtualinvoke r0.<android.os.Handler: void handleMessage(android.os.Message)>(r1);
+		SootMethod smHandleMessage = HandlerClass.getMethodUnsafe("void handleMessage(android.os.Message)");
+		assert smHandleMessage != null;
+		Local lhs_0 = localGenerator.generateLocal(BooleanType.v());
+		InvokeExpr expr_0 = Jimple.v().newVirtualInvokeExpr(thisLocal, smHandleMessage.makeRef(), firstParam);
+		Unit unit_0 = Jimple.v().newAssignStmt(lhs_0, expr_0);
+		body.getUnits().add(unit_0);
+								
+		// return;
+		Unit unit_1 = Jimple.v().newReturnVoidStmt();
+		body.getUnits().add(unit_1);
+		return body;
+	}
+	
+	/*
+	public final boolean sendMessageDelayed(android.os.Message, long)
+    {
+        android.os.Handler r0;
+        android.os.Message r1;
+        byte $b0;
+        long $l1, $l2, l3;
+        boolean $z0;
+
+        r0 := @this: android.os.Handler;
+        r1 := @parameter0: android.os.Message;
+        l3 := @parameter1: long;
+
+        $b0 = l3 cmp 0L;
+        if $b0 >= 0 goto label1;
+        l3 = 0L;
+     label1:
+        $l1 = staticinvoke <android.os.SystemClock: long uptimeMillis()>();
+        $l2 = $l1 + l3;
+        $z0 = virtualinvoke r0.<android.os.Handler: boolean sendMessageAtTime(android.os.Message,long)>(r1, $l2);
+        return $z0;
+    }
+	*/
+	private Body patchSendMessageDelayed(SootMethod method) {
+		// init
+		SootClass HandlerClass = method.getDeclaringClass();
+		HandlerClass.setLibraryClass();
+		method.setPhantom(false);
+
+		Body body = Jimple.v().newBody(method);
+		method.setActiveBody(body);
+
+		LocalGenerator localGenerator = new LocalGenerator(method.getActiveBody());
+		SootClass MessageClass = Scene.v().getSootClass("android.os.Message");
+								
+		// this local
+		Local thisLocal = localGenerator.generateLocal(HandlerClass.getType());
+		body.getUnits().add(Jimple.v().newIdentityStmt(thisLocal, Jimple.v().newThisRef(HandlerClass.getType())));
+
+		// parameter local
+		Local firstParam = null;
+		Local secondParam = null;
+		for (int i = 0; i < method.getParameterCount(); i++) {
+			Local paramLocal = localGenerator.generateLocal(method.getParameterType(i));
+			body.getUnits().add(Jimple.v().newIdentityStmt(paramLocal, Jimple.v().newParameterRef(method.getParameterType(i), i)));
+			if (i == 0)
+				firstParam = paramLocal;
+			if (i == 1)
+				secondParam = paramLocal;
+		}
+								
+		// $z0 = virtualinvoke r0.<android.os.Handler: boolean sendMessageAtTime(android.os.Message,long)>(r1, $l2);
+		SootMethod smSendMessageAtTime = HandlerClass.getMethodUnsafe("boolean sendMessageAtTime(android.os.Message,long)");
+		assert smSendMessageAtTime != null;
+		Local lhs_0 = localGenerator.generateLocal(BooleanType.v());
+		InvokeExpr expr_0 = Jimple.v().newVirtualInvokeExpr(thisLocal, smSendMessageAtTime.makeRef(), firstParam, secondParam);
+		Unit unit_0 = Jimple.v().newAssignStmt(lhs_0, expr_0);
+		body.getUnits().add(unit_0);
+								
+		// return $z0;
+		Unit uint_1 = Jimple.v().newReturnStmt(lhs_0);
+		body.getUnits().add(uint_1);
+		return body;
+	}
+	
+	/**
+	 * Checks whether the given method body is a stub implementation and can
+	 * safely be overwritten
+	 * 
+	 * @param body
+	 *            The body to check
+	 * @return True if the given method body is a stub implementation, otherwise
+	 *         false
+	 */
+	private boolean isStubImplementation(Body body) {
+		for (Unit u : body.getUnits()) {
+			Stmt stmt = (Stmt) u;
+			if (stmt.containsInvokeExpr()) {
+				InvokeExpr iexpr = stmt.getInvokeExpr();
+				SootMethod targetMethod = iexpr.getMethod();
+				if (targetMethod.isConstructor()
+						&& targetMethod.getDeclaringClass().getName().equals("java.lang.RuntimeException"))
+					if (iexpr.getArgCount() > 0 && iexpr.getArg(0).equals(stubConst))
+						return true;
+			}
+		}
+		return false;
+	}
+
+}
