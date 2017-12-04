@@ -54,7 +54,7 @@ public class AndroidEntryPointUtils {
 		osClassActivity = Scene.v().getSootClassUnsafe(AndroidEntryPointConstants.ACTIVITYCLASS);
 		osClassService = Scene.v().getSootClassUnsafe(AndroidEntryPointConstants.SERVICECLASS);
 		osClassFragment = Scene.v().getSootClassUnsafe(AndroidEntryPointConstants.FRAGMENTCLASS);
-		osClassSupportFragment = Scene.v().getSootClassUnsafe("android.support.v4.app.Fragment");
+		osClassSupportFragment = Scene.v().getSootClassUnsafe(AndroidEntryPointConstants.SUPPORTFRAGMENTCLASS);
 		osClassBroadcastReceiver = Scene.v().getSootClassUnsafe(AndroidEntryPointConstants.BROADCASTRECEIVERCLASS);
 		osClassContentProvider = Scene.v().getSootClassUnsafe(AndroidEntryPointConstants.CONTENTPROVIDERCLASS);
 		osClassGCMBaseIntentService = Scene.v().getSootClassUnsafe(AndroidEntryPointConstants.GCMBASEINTENTSERVICECLASS);

@@ -28,6 +28,7 @@ public class AndroidEntryPointConstants {
 	public static final String CONTENTPROVIDERCLASS = "android.content.ContentProvider";
 	public static final String APPLICATIONCLASS = "android.app.Application";
 	public static final String FRAGMENTCLASS = "android.app.Fragment";
+	public static final String SUPPORTFRAGMENTCLASS = "android.support.v4.app.Fragment";
 	public static final String SERVICECONNECTIONINTERFACE = "android.content.ServiceConnection";
 	
 	public static final String ACTIVITY_ONCREATE = "void onCreate(android.os.Bundle)";
