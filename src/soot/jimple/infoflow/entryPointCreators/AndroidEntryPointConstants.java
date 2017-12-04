@@ -66,7 +66,7 @@ public class AndroidEntryPointConstants {
 	
 	public static final String FRAGMENT_ONCREATE = "void onCreate(android.os.Bundle)";
 	public static final String FRAGMENT_ONATTACH = "void onAttach(android.app.Activity)";
-	public static final String FRAGMENT_ONCREATEVIEW = "void onCreateView(android.view.LayoutInflater,android.view.ViewGroup,android.os.Bundle)";
+	public static final String FRAGMENT_ONCREATEVIEW = "android.view.View onCreateView(android.view.LayoutInflater,android.view.ViewGroup,android.os.Bundle)";
 	public static final String FRAGMENT_ONVIEWCREATED = "void onViewCreated(android.view.View,android.os.Bundle)";
 	public static final String FRAGMENT_ONSTART = "void onStart()";
 	public static final String FRAGMENT_ONACTIVITYCREATED = "void onActivityCreated(android.os.Bundle)";

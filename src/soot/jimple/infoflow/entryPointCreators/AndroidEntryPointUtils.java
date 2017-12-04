@@ -21,6 +21,7 @@ public class AndroidEntryPointUtils {
 	private SootClass osClassActivity;
 	private SootClass osClassService;
 	private SootClass osClassFragment;
+	private SootClass osClassSupportFragment;
 	private SootClass osClassBroadcastReceiver;
 	private SootClass osClassContentProvider;
 	private SootClass osClassGCMBaseIntentService;
@@ -53,6 +54,7 @@ public class AndroidEntryPointUtils {
 		osClassActivity = Scene.v().getSootClassUnsafe(AndroidEntryPointConstants.ACTIVITYCLASS);
 		osClassService = Scene.v().getSootClassUnsafe(AndroidEntryPointConstants.SERVICECLASS);
 		osClassFragment = Scene.v().getSootClassUnsafe(AndroidEntryPointConstants.FRAGMENTCLASS);
+		osClassSupportFragment = Scene.v().getSootClassUnsafe("android.support.v4.app.Fragment");
 		osClassBroadcastReceiver = Scene.v().getSootClassUnsafe(AndroidEntryPointConstants.BROADCASTRECEIVERCLASS);
 		osClassContentProvider = Scene.v().getSootClassUnsafe(AndroidEntryPointConstants.CONTENTPROVIDERCLASS);
 		osClassGCMBaseIntentService = Scene.v().getSootClassUnsafe(AndroidEntryPointConstants.GCMBASEINTENTSERVICECLASS);
@@ -86,7 +88,9 @@ public class AndroidEntryPointUtils {
 			ctype = ComponentType.Service;
 		// (4) android.app.BroadcastReceiver
 		else if (osClassFragment != null && Scene.v().getOrMakeFastHierarchy().canStoreType(
-			currentClass.getType(), osClassFragment.getType()))
+			     currentClass.getType(), osClassFragment.getType()) || 
+				 osClassSupportFragment != null && Scene.v().getOrMakeFastHierarchy().canStoreType(
+			     currentClass.getType(), osClassSupportFragment.getType()))
 			ctype = ComponentType.Fragment;
 		// (5) android.app.BroadcastReceiver
 		else if (osClassBroadcastReceiver != null && Scene.v().getOrMakeFastHierarchy().canStoreType(
