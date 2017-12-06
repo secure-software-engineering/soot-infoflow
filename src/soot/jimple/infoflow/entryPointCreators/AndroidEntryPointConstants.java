@@ -28,6 +28,7 @@ public class AndroidEntryPointConstants {
 	public static final String CONTENTPROVIDERCLASS = "android.content.ContentProvider";
 	public static final String APPLICATIONCLASS = "android.app.Application";
 	public static final String FRAGMENTCLASS = "android.app.Fragment";
+	public static final String SUPPORTFRAGMENTCLASS = "android.support.v4.app.Fragment";
 	public static final String SERVICECONNECTIONINTERFACE = "android.content.ServiceConnection";
 	
 	public static final String ACTIVITY_ONCREATE = "void onCreate(android.os.Bundle)";
@@ -66,7 +67,7 @@ public class AndroidEntryPointConstants {
 	
 	public static final String FRAGMENT_ONCREATE = "void onCreate(android.os.Bundle)";
 	public static final String FRAGMENT_ONATTACH = "void onAttach(android.app.Activity)";
-	public static final String FRAGMENT_ONCREATEVIEW = "void onCreateView(android.view.LayoutInflater,android.view.ViewGroup,android.os.Bundle)";
+	public static final String FRAGMENT_ONCREATEVIEW = "android.view.View onCreateView(android.view.LayoutInflater,android.view.ViewGroup,android.os.Bundle)";
 	public static final String FRAGMENT_ONVIEWCREATED = "void onViewCreated(android.view.View,android.os.Bundle)";
 	public static final String FRAGMENT_ONSTART = "void onStart()";
 	public static final String FRAGMENT_ONACTIVITYCREATED = "void onActivityCreated(android.os.Bundle)";
